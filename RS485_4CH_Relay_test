@@ -1,0 +1,118 @@
+// STM8S103F3 4채널 RS485 통신 릴레이 모듈 [SZH-RLBG-033]
+
+#include <SoftwareSerial.h>
+SoftwareSerial modbus(2, 3); // RX, TX
+
+#include "CRC16.h"
+#include "CRC.h"
+CRC16 crc;
+
+// 데이터 입출력핀 
+// LOW(0)일때 수신모드, HIGH(1)일때 송신모드
+#define mode 13 
+// 슬레이브 ID
+#define slaveid 0x01
+
+void setup() {
+  Serial.begin(9600);
+  modbus.begin(9600);
+  // 출력핀 설정
+  pinMode(mode, OUTPUT);
+  // 데이터를 받기 위해서 수신모드로 시작
+  recv_mode();
+}
+
+void loop() {
+  // 송신 데이터
+  byte request[] = {slaveid, 0x05, 0x00, 0x00, 0xFF, 0x00};
+  //byte request[] = {slaveid, 0x05, 0x00, 0x00, 0x00, 0x00};
+
+  // CRC 계산해서 보낸다! crc16 함수를 이용해 crc를 계산 https://crccalc.com/
+  // uint16_t 는 unsigned int와 같다.  
+  uint16_t request_crc = crc16(request, sizeof(request), 0x8005, 0xFFFF, 0, true, true);
+
+  // 16비트(2바이트)로 표현된 result 값을 1byte씩 쪼개서 2byte로 나눠담는 과정이다. 
+  byte request_crc_high = request_crc >> 8; // 비트연산자
+  byte request_crc_low = request_crc & 0xFF;
+
+  Serial.print("송신 전 계산된 CRC : ");
+  Serial.print(request_crc_low, HEX);
+  Serial.print(", ");
+  Serial.println(request_crc_high, HEX);
+  
+  // 송신모드
+  send_mode();
+  modbus.write(request, sizeof(request)); // Serial.write(buf, len)
+  modbus.write(request_crc_low);
+  modbus.write(request_crc_high);
+  modbus.flush();
+  recv_mode();
+  
+  // 응답 여유를 준다
+  //while(!modbus.available());
+ 
+  byte response[50];
+  int len = 0;
+  // 우체통에 가져올 우편이 있다면 하나씩 가져와서 response에 넣는다
+  while(modbus.available()) {
+    response[len] = modbus.read();
+    len++;
+  }
+
+  /*/====== 예외처리=========
+  // 응답에서 8바이트를 받는다고 한다면 0x01, 0x05, 0x00, 0x00, 0xFF, 0x00, 0x8C, 0x3A  
+  int response_length = 8; // 8개가 아닌 경우 예외처리
+  if(len != response_length) {
+    Serial.println("데이터가 잘못 왔다!");
+    return;
+    delay(500);
+  }
+  */
+
+  // response 안에 들어있는 값을 길이에 맞는 byte array에 담는 과정
+  byte data[len-2]; // crc가 들어있는 것은 제외
+  for(int i=0;i<len-2;i++) {
+    data[i] = response[i];
+  }
+
+  // 시리얼모니터에 출력
+  for(int i=0;i<len;i++) {
+    Serial.print(response[i], HEX); // HEX 16진수로 출력
+    Serial.print(",");
+  }
+  Serial.println();
+
+  Serial.print("수신된 CRC=");
+  Serial.print(response[len-2], HEX); // 뒤에서 2번째 것이 low
+  Serial.println(response[len-1], HEX); // 뒤에서 첫번째 것이 high
+
+  // 응답 CRC 체크 
+  uint16_t result = crc16(data, len-2, 0x8005, 0xFFFF, 0, true, true); // CRC 계산
+
+  // 2바이트로 표현된 result 값을 1byte씩 쪼개서 2byte로 나눠담는 과정이다. 
+  byte crc_high = result >> 8;
+  byte crc_low = result & 0xFF;
+
+  Serial.print("응답 CRC 검증 - Low: ");
+  Serial.print(crc_low, HEX);
+  Serial.print(", High:");
+  Serial.println(crc_high, HEX);
+  Serial.println();
+  
+  // 에러 조건 - 통신거리가 길거나 슬레이브가 많은 경우 확인
+  if(crc_low != response[len-2] || crc_high != response[len-1]) {
+    Serial.println("CRC Error!");
+    delay(1000);
+    return;
+  }
+
+  delay(3000);
+}
+
+// 출력핀 송수신모드
+void send_mode() {
+  digitalWrite(mode, HIGH);
+}
+void recv_mode() {
+  digitalWrite(mode, LOW);
+}
