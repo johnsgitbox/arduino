@@ -1,0 +1,113 @@
+STM8S103F3 4채널 RS485 통신 릴레이 모듈 [SZH-RLBG-033]
+
+Description:
+1.This is a 1/2/4/8 Channel 5V Relay Output Board Module.
+2.Easy to install.
+3.Good quality, durable.
+4.Portable design,easy to operate.
+5.Low power, high precision,RS485 / TTL Communication.
+6.1/2/4/8 channel optocoupler isolation.
+Specifications:
+1. RS485 communication interface
+2. TTL communication interface
+3. 1/2/4/8 channel optocoupler isolation
+4. A user button
+5. A user LED indicator
+6. A power indicator
+7. Power terminal interface (5V power supply)
+8. 1 input
+9. 1 output
+10.DC power carrier (5V power supply)
+11. Power terminal interface (5V power supply)
+Modbus RTU instruction
+Baud rate: 9600 8 NONE 1
+Hexadecimal transmission
+Hexadecimal reception
+Steps:
+1. Software set communication baud rate
+2. Set the address (device address used for communication, the default address is 01
+/************************************************* ****************(▼리턴11)
+Note: Only one device is connected, otherwise the address will be set.
+Set the address to: 01
+00 10 00 00 00 01 02 00 01 6A 00// Modified to 01
+Set the address to: 02
+00 10 00 00 00 01 02 00 02 2A 01// Modified to 02
+Set the address to: 03
+00 10 00 00 00 01 02 00 03 EB C1// Modified to 03
+
+Read address(▼리턴7)
+00 03 00 00 00 01 85 db
+return:
+00 03 02 00 01 44 44 //01 is the address
+/************************************************* ****************
+
+
+/************************************************* ****************
+The meaning of each byte:
+[Address 1]
+//--------------------------------------------
+Relay No. 1 is on: 01 05 00 01 01 00 9d 9a
+yte 5 6: Register Data
+Byte 7 8: CRC check
+//=========================================================(▼리턴8)
+[Address 1]
+//--------------------------------------------
+Relay No. 0 is on: 01 05 00 00 FF 00 8C 3A
+Relay No. 0 is closed: 01 05 00 00 00 00 CD CA
+//--------------------------------------------
+Relay No. 1 is on: 01 05 00 01 FF 00 DD FA
+Relay No. 1 is closed: 01 05 00 01 00 00 9C 0A
+//-------------------------------------------
+Relay No. 2 is on: 01 05 00 02 FF 00 2D FA
+Relay No. 2 is closed: 01 05 00 02 00 00 6C 0A
+//-------------------------------------------
+Relay No. 3 is open: 01 05 00 03 FF 00 7C 3A
+Relay No. 3 is closed: 01 05 00 03 00 00 3D CA
+//-------------------------------------------
+Relay No. 4 is on: 01 05 00 04 FF 00 CD FB
+Relay No. 4 is closed: 01 05 00 04 00 00 8C 0B
+//--------------------------------------------
+Relay No. 5 is on: 01 05 00 05 FF 00 9C 3B
+Relay No. 5 is closed: 01 05 00 05 00 00 DD CB
+//-------------------------------------------
+Relay No. 6 is on: 01 05 00 06 FF 00 6C 3B
+Relay No. 6 is closed: 01 05 00 06 00 00 2D CB
+//-------------------------------------------
+Relay No. 7 is on: 01 05 00 07 FF 00 3D FB
+Relay No. 7 is closed: 01 05 00 07 00 00 7C 0B
+//-------------------------------------------
+/************************************************* ******************(▼리턴6)
+Read No. 0 relay status: 01 01 00 00 00 01 FD CA
+Read relay status No. 1: 01 01 00 01 00 01 AC 0A
+Read the status of relay No. 2: 01 01 00 02 00 01 5C 0A
+Read relay status No. 3: 01 01 00 03 00 01 0D CA
+Read relay status No. 4: 01 01 00 04 00 01 BC 0B
+Read relay status No. 5: 01 01 00 05 00 01 ED CB
+Read relay status No. 6: 01 01 00 06 00 01 1D CB
+Read relay status No. 7: 01 01 00 07 00 01 4C 0B
+Read all relay status: 01 01 00 00 00 08 3D CC
+/************************************************* ******************(▼리턴8)
+Flash instruction:
+Description: Close immediately after turning on, 100MS is one unit [1 represents 100M
+Address 1:
+Relay No. 0 is flashed off: 01 05 02 00 07 00 CE 42 //700MS = 7*100MS = 700MS
+Relay No. 1 is flashed off: 01 05 02 01 08 00 9A 72 //800MS
+Return: same as sending the command
+Address 2:
+Relay No. 0 is flashed off: 02 05 02 00 05 00 CF 11 //500MS
+Relay No. 1 is flashed off: 02 05 02 01 06 00 9E 21 //600MS
+//=========================================================(▼리턴10)
+Fully extinguished: 01 0F 00 00 00 08 01 00 FE 95 전체 끄기
+Full light: 01 0F 00 00 00 08 01 FF BE D5            전체 켜기
+/************************************************* *****************(▼리턴8)
+Relay No. 3 flipped: 01 05 00 03 55 00 02 9A
+Relay No. 4 flipped: 01 05 00 04 55 00 B3 5B
+Relay No. 5 flipped: 01 05 00 05 55 00 E2 9B
+Relay No. 6 flipped: 01 05 00 06 55 00 12 9B
+Relay No. 7 flipped: 01 05 00 07 55 00 43 5B
+All flip instructions:
+01 05 00 00 5A 00 F7 6A
+/************************************************* *****************
+Read all interfaces input status
+Send: 01 02 00 00 00 08 79 CC //Read 8 input states
+Back: 01 02 01 00 A1 88
